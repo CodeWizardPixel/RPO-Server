@@ -1,0 +1,9 @@
+.git
+.agents
+.codex
+.vscode
+RPO-Frontend/node_modules
+RPO-Frontend/dist
+RPO-Backend/web/dist
+**/.DS_Store
+**/*.log

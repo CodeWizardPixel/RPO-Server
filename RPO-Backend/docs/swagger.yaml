@@ -1,0 +1,1144 @@
+basePath: /api/v1
+definitions:
+  handlers.AuthorizationRequest:
+    properties:
+      amount:
+        type: number
+      card_number:
+        type: string
+      operation:
+        type: string
+      terminal_serial_number:
+        type: string
+    type: object
+  handlers.CardBalanceRequest:
+    properties:
+      balance:
+        type: number
+      id:
+        type: integer
+    type: object
+  handlers.CardRequest:
+    properties:
+      balance:
+        type: number
+      card_number:
+        type: string
+      id:
+        type: integer
+      is_blocked:
+        type: integer
+      key_id:
+        type: integer
+      owner_name:
+        type: string
+    type: object
+  handlers.KeyRequest:
+    properties:
+      id:
+        type: integer
+      value:
+        type: string
+    type: object
+  handlers.LoginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.LoginResponse:
+    properties:
+      message:
+        type: string
+      token:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  handlers.TerminalRequest:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      serial_number:
+        type: string
+    type: object
+  handlers.TransactionRequest:
+    properties:
+      amount:
+        type: number
+      card_id:
+        type: integer
+      id:
+        type: integer
+      terminal_id:
+        type: integer
+    type: object
+  handlers.UserRequest:
+    properties:
+      id:
+        type: integer
+      is_admin:
+        type: integer
+      login:
+        type: string
+      name:
+        type: string
+      password_hash:
+        type: string
+    type: object
+  handlers.ValidateTokenResponse:
+    properties:
+      message:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  repository.Card:
+    properties:
+      balance:
+        type: number
+      cardNumber:
+        type: string
+      id:
+        type: integer
+      isBlocked:
+        type: integer
+      keyID:
+        type: integer
+      ownerName:
+        type: string
+    type: object
+  repository.Key:
+    properties:
+      id:
+        type: integer
+      value:
+        type: string
+    type: object
+  repository.Terminal:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      serialNumber:
+        type: string
+    type: object
+  repository.Transaction:
+    properties:
+      amount:
+        type: number
+      cardID:
+        type: integer
+      createdAt:
+        type: string
+      id:
+        type: integer
+      operation:
+        type: string
+      terminalID:
+        type: integer
+    type: object
+  repository.User:
+    properties:
+      id:
+        type: integer
+      isAdmin:
+        type: integer
+      login:
+        type: string
+      name:
+        type: string
+      passwordHash:
+        type: string
+    type: object
+  service.AuthorizationResponse:
+    properties:
+      authorized:
+        type: boolean
+      balance:
+        type: number
+      card_number:
+        type: string
+      message:
+        type: string
+      operation:
+        type: string
+    type: object
+host: 188.244.6.119:8888
+info:
+  contact: {}
+  title: Lab2 REST API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with login and password and returns a JWT
+        access token.
+      parameters:
+      - description: Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT and user id
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Invalid request body or missing fields
+          schema:
+            type: string
+        "401":
+          description: Invalid login or password
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Issue JWT
+      tags:
+      - auth
+  /auth/validate:
+    post:
+      description: Verifies the Bearer token sent in the Authorization header.
+      parameters:
+      - default: Bearer
+        description: Bearer JWT
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token is valid
+          schema:
+            $ref: '#/definitions/handlers.ValidateTokenResponse'
+        "400":
+          description: Missing or malformed Authorization header
+          schema:
+            type: string
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/handlers.ValidateTokenResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Validate JWT
+      tags:
+      - auth
+  /cards/all:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.Card'
+            type: array
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List cards
+      tags:
+      - cards
+  /cards/balance:
+    put:
+      consumes:
+      - application/json
+      description: Admin only. Sets balance to the given value.
+      parameters:
+      - description: id and balance
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CardBalanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update card balance only
+      tags:
+      - cards
+  /cards/create:
+    post:
+      consumes:
+      - application/json
+      description: Admin only.
+      parameters:
+      - description: card_number, balance, is_blocked, owner_name, optional key_id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CardRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create card
+      tags:
+      - cards
+  /cards/delete:
+    delete:
+      description: Admin only.
+      parameters:
+      - description: Card ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete card
+      tags:
+      - cards
+  /cards/get:
+    get:
+      parameters:
+      - description: Card ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Card'
+        "400":
+          description: Invalid id or not found
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Get card by ID
+      tags:
+      - cards
+  /cards/update:
+    put:
+      consumes:
+      - application/json
+      description: Admin only. Updates balance, block flag, owner, and key link.
+      parameters:
+      - description: id and fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CardRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update card
+      tags:
+      - cards
+  /keys/all:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.Key'
+            type: array
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List keys
+      tags:
+      - keys
+  /keys/create:
+    post:
+      consumes:
+      - application/json
+      description: Admin only.
+      parameters:
+      - description: value
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.KeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create key
+      tags:
+      - keys
+  /keys/delete:
+    delete:
+      description: Admin only.
+      parameters:
+      - description: Key ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete key
+      tags:
+      - keys
+  /keys/get:
+    get:
+      parameters:
+      - description: Key ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Key'
+        "400":
+          description: Invalid id or not found
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Get key by ID
+      tags:
+      - keys
+  /keys/update:
+    put:
+      consumes:
+      - application/json
+      description: Admin only.
+      parameters:
+      - description: id, value
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.KeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update key
+      tags:
+      - keys
+  /terminals/all:
+    get:
+      description: Returns all payment terminals.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.Terminal'
+            type: array
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List terminals
+      tags:
+      - terminals
+  /terminals/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a terminal. Admin JWT required (is_admin=1).
+      parameters:
+      - description: Terminal fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TerminalRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create terminal
+      tags:
+      - terminals
+  /terminals/delete:
+    delete:
+      description: Deletes a terminal by id. Admin JWT required.
+      parameters:
+      - description: Terminal ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete terminal
+      tags:
+      - terminals
+  /terminals/get:
+    get:
+      description: Returns a single terminal by numeric id.
+      parameters:
+      - description: Terminal ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Terminal'
+        "400":
+          description: Invalid id or not found
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Get terminal by ID
+      tags:
+      - terminals
+  /terminals/update:
+    put:
+      consumes:
+      - application/json
+      description: Updates a terminal by id. Admin JWT required.
+      parameters:
+      - description: Must include id and fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TerminalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update terminal
+      tags:
+      - terminals
+  /transactions/all:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.Transaction'
+            type: array
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List transactions
+      tags:
+      - transactions
+  /transactions/authorize:
+    post:
+      consumes:
+      - application/json
+      description: Processes a withdraw or deposit operation for a card at a terminal.
+      parameters:
+      - description: card_number, terminal_serial_number, amount, operation (withdraw
+          or deposit)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AuthorizationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.AuthorizationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Process card transaction
+      tags:
+      - transactions
+  /transactions/create:
+    post:
+      consumes:
+      - application/json
+      description: Admin only. Records amount for a card at a terminal.
+      parameters:
+      - description: amount, card_id, terminal_id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create transaction
+      tags:
+      - transactions
+  /transactions/delete:
+    delete:
+      description: Admin only.
+      parameters:
+      - description: Transaction ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete transaction
+      tags:
+      - transactions
+  /transactions/get:
+    get:
+      parameters:
+      - description: Transaction ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Transaction'
+        "400":
+          description: Invalid id or not found
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Get transaction by ID
+      tags:
+      - transactions
+  /users/all:
+    get:
+      description: Returns all user records (includes password hash fields as stored).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.User'
+            type: array
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List users
+      tags:
+      - users
+  /users/create:
+    post:
+      consumes:
+      - application/json
+      description: Admin only. Expects pre-hashed password in password_hash.
+      parameters:
+      - description: login, name, password_hash, is_admin
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - users
+  /users/delete:
+    delete:
+      description: Admin only.
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
+  /users/get:
+    get:
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.User'
+        "400":
+          description: Invalid id or not found
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      summary: Get user by ID
+      tags:
+      - users
+  /users/update:
+    put:
+      consumes:
+      - application/json
+      description: Admin only.
+      parameters:
+      - description: id, name, password_hash, is_admin
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid token
+          schema:
+            type: string
+        "403":
+          description: Not an admin
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - users
+schemes:
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
