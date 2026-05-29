@@ -1,7 +1,7 @@
 // @title Lab2 REST API
 // @version 1.0
 
-// @host localhost:8888
+// @host 188.244.6.119:8888
 // @BasePath /api/v1
 // @schemes https
 
