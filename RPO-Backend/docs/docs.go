@@ -1781,7 +1781,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "labs.inkazap.space",
+	Host:             "localhost:8888",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"https"},
 	Title:            "Lab2 REST API",
